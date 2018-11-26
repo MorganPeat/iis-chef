@@ -96,10 +96,41 @@ directory "c:\\app" do
     action :create
 end
 
+# https://www.dotnetcatch.com/2016/05/11/dsc-in-chef-converting-ruby-hashes-to-powershell-types/
+class WebsiteBindings 
+    @bindings = [] 
+    def initialize(bindings) 
+      @bindings = bindings 
+    end
+       
+    def to_psobject() 
+      bindings = Array.new() 
+      @bindings.each do |b| 
+        bindings.push("(new-ciminstance -classname MSFT_xWebBindingInformation -Namespace root/microsoft/Windows/DesiredStateConfiguration -Property @{Protocol='#{b[:protocol]}';IPAddress='#{b[:ip]}';Port=#{b[:port]}} -ClientOnly)") 
+      end
+      "[ciminstance[]](#{bindings.join(',')})"
+    end
+  end
+
+node.run_state['bindings'] = WebsiteBindings.new([ 
+{ protocol: 'HTTP', ip: '*', port: 8080 }, 
+{ protocol: 'HTTP', ip: '*', port: 8081 } ]) 
+
+
 dsc_resource "create website" do
     resource :xWebsite
     property :ensure, 'Present'
     property :name, 'Pilot.WebApi'
     property :physicalPath, 'C:\app'
-    property :state, 'Started'    
+    property :state, 'Started'
+    property :bindingInfo, node.run_state['bindings']
+end
+
+dsc_resource "create web application" do
+    resource :xWebApplication
+    property :ensure, 'Present'
+    property :name, 'Pilot.WebApi'
+    property :webSite, 'Pilot.WebApi'
+    property :webAppPool, 'Pilot.WebApi'
+    property :physicalPath, 'C:\app'
 end
