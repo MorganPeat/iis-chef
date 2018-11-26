@@ -1,0 +1,5 @@
+# Test kitchen 
+.kitchen/
+
+# Berksfile
+Berksfile.lock
