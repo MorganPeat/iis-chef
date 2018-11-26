@@ -4,6 +4,11 @@
 #
 # Copyright:: 2018, The Authors, All Rights Reserved.
 
+powershell_script 'install Nuget package provider' do
+    code 'Install-PackageProvider -Name NuGet -Force'
+    not_if '(Get-PackageProvider -Name Nuget -ListAvailable -ErrorAction SilentlyContinue) -ne $null'
+end
+  
 powershell_package_source 'Nuget' do
     action :register
     provider_name 'NuGet'
@@ -133,4 +138,10 @@ dsc_resource "create web application" do
     property :webSite, 'Pilot.WebApi'
     property :webAppPool, 'Pilot.WebApi'
     property :physicalPath, 'C:\app'
+end
+
+reboot "restart" do
+    action :nothing
+    reason "Features installed, reboot required"
+    delay_mins 0
 end
