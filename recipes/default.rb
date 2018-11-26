@@ -10,3 +10,5 @@ dsc_resource "install iis" do
     property :name, 'Web-Server'
     property :ensure, 'Present'
 end
+
+include_recipe 'morgan1::web'
