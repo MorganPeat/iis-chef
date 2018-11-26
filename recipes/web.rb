@@ -18,11 +18,88 @@ powershell_package 'Install xWebAdministration' do
     version '2.3.0.0'
 end
 
+powershell_package 'Install xPSDesiredStateConfiguration' do
+    action :install
+    package_name 'xPSDesiredStateConfiguration'
+    version '8.4.0.0'
+end
+
 
 dsc_resource "stop default" do
     resource :xWebsite
     property :name, 'Default Web Site'
     property :ensure, 'Present'
     property :state, 'Stopped'
-    property :physicalpath, 'C:\inetpub\wwwroot'    
+end
+
+dsc_resource "setup-dir-1" do
+    resource :file
+    property :ensure, 'Present'
+    property :type, 'Directory'
+    property :destinationpath, 'C:\Packages'
+end
+
+dsc_resource "setup-dir-2" do
+    resource :file
+    property :ensure, 'Present'
+    property :type, 'Directory'
+    property :destinationpath, 'C:\app'
+end
+
+dsc_resource "SchUseStrongCrypto" do
+    resource :registry
+    property :ensure, 'Present'
+    property :key, 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319'
+    property :valuename, 'SchUseStrongCrypto'
+    property :valuetype, 'Dword'
+    property :valuedata, ['1']
+end
+
+dsc_resource "SchUseStrongCrypto64" do
+    resource :registry
+    property :ensure, 'Present'
+    property :key, 'HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319'
+    property :valuename, 'SchUseStrongCrypto'
+    property :valuetype, 'Dword'
+    property :valuedata, ['1']
+end
+
+dsc_resource "download web site" do
+    resource :xremotefile
+    property :ensure, 'Present'
+    property :uri, 'http://github.com/MorganPeat/Pilot/releases/download/pilot-v1.0.13/Pilot.WebApi.zip'
+    property :destinationpath, 'C:\packages\Pilot.WebApi.zip'
+end
+
+dsc_resource "unzip web site" do
+    resource :archive
+    property :ensure, 'Present'
+    property :path, 'c:\packages\Pilot.WebApi.zip'
+    property :destination, 'C:\app'
+end
+
+
+dsc_resource "app pool" do
+    resource :xWebAppPool
+    property :ensure, 'Present'
+    property :name, 'Pilot.WebApi'
+    property :state, 'Started'
+    property :autoStart, true
+    property :enable32BitAppOnWin64, true
+    property :managedPipelineMode, 'Integrated'
+    property :managedRuntimeVersion, 'v4.0'
+end
+
+directory "c:\\app" do
+    rights :read, 'IIS_IUSRS'
+    recursive true
+    action :create
+end
+
+dsc_resource "create website" do
+    resource :xWebsite
+    property :ensure, 'Present'
+    property :name, 'Pilot.WebApi'
+    property :physicalPath, 'C:\app'
+    property :state, 'Started'    
 end
