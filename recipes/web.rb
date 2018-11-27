@@ -29,6 +29,12 @@ powershell_package 'Install xPSDesiredStateConfiguration' do
     version '8.4.0.0'
 end
 
+powershell_package 'Install NetworkingDsc' do
+    action :install
+    package_name 'NetworkingDsc'
+    version '6.1.0.0'
+end
+
 
 dsc_resource "stop default" do
     resource :xWebsite
@@ -72,7 +78,7 @@ end
 dsc_resource "download web site" do
     resource :xremotefile
     property :ensure, 'Present'
-    property :uri, 'http://github.com/MorganPeat/Pilot/releases/download/pilot-v1.0.13/Pilot.WebApi.zip'
+    property :uri, 'http://github.com/MorganPeat/Pilot/releases/download/pilot-v1.0.15/Pilot.WebApi.zip'
     property :destinationpath, 'C:\packages\Pilot.WebApi.zip'
 end
 
@@ -87,7 +93,7 @@ end
 dsc_resource "app pool" do
     resource :xWebAppPool
     property :ensure, 'Present'
-    property :name, 'Pilot.WebApi'
+    property :name, 'Pilot.WebApi.AppPool'
     property :state, 'Started'
     property :autoStart, true
     property :enable32BitAppOnWin64, true
@@ -118,8 +124,8 @@ class WebsiteBindings
   end
 
 node.run_state['bindings'] = WebsiteBindings.new([ 
-{ protocol: 'HTTP', ip: '*', port: 8080 }, 
-{ protocol: 'HTTP', ip: '*', port: 8081 } ]) 
+{ protocol: 'http', ip: '*', port: 8080 }, 
+{ protocol: 'http', ip: '*', port: 8081 } ]) 
 
 
 dsc_resource "create website" do
@@ -129,19 +135,18 @@ dsc_resource "create website" do
     property :physicalPath, 'C:\app'
     property :state, 'Started'
     property :bindingInfo, node.run_state['bindings']
+    property :applicationPool, 'Pilot.WebApi.AppPool'
 end
 
-dsc_resource "create web application" do
-    resource :xWebApplication
+dsc_resource "firewall rule" do
+    resource :Firewall
     property :ensure, 'Present'
-    property :name, 'Pilot.WebApi'
-    property :webSite, 'Pilot.WebApi'
-    property :webAppPool, 'Pilot.WebApi'
-    property :physicalPath, 'C:\app'
-end
-
-reboot "restart" do
-    action :nothing
-    reason "Features installed, reboot required"
-    delay_mins 0
+    property :name, 'PilotWebApiRule'
+    property :displayName, 'Pilot.WebApi (TCP 8080 in)'
+    property :action, 'Allow'
+    property :direction, 'Inbound'
+    property :localPort, ['8080']
+    property :protocol, 'TCP'
+    property :profile, ['Any']
+    property :enabled, 'True'
 end
