@@ -47,7 +47,8 @@ default['iis']['windows-features'] = [
 default['iis']['powershell-packages'] = {
   'xWebAdministration'           => '2.3.0.0',
   'xPSDesiredStateConfiguration' => '8.4.0.0',
-  'NetworkingDsc'                => '6.1.0.0'
+  'NetworkingDsc'                => '6.1.0.0',
+  'GraniResource'                => '3.7.11.0',
 }
 
 # Name of the IIS website
@@ -67,3 +68,7 @@ default['iis']['site-state'] = 'Started'
 default['iis']['pool-state'] = 'Started'
 # 32- or 64-bit app pool process
 default['iis']['32-bit-pool'] = false
+
+# Values taken from https://support.microsoft.com/en-gb/help/4054531/microsoft-net-framework-4-7-2-web-installer-for-windows
+default['dotnet']['uri'] = 'http://go.microsoft.com/fwlink/?LinkId=863262'
+default['dotnet']['kb'] = 'KB4054590'

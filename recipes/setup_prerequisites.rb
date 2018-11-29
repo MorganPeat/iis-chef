@@ -37,7 +37,7 @@ end
 # https://docs.microsoft.com/en-us/dotnet/framework/network-programming/tls#configuring-security-via-the-windows-registry
 [
   'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319',
-  'HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319'
+  'HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319',
 ].each do |key|
   dsc_resource 'SchUseStrongCrypto' do
     resource :registry
@@ -46,4 +46,24 @@ end
     property :valuetype, 'Dword'
     property :valuedata, ['1']
   end
+end
+
+# Ensure the correct .NET Framework is installed
+dsc_resource 'Download .NET Framework installer' do
+  resource :xRemoteFile
+  property :Uri, node['dotnet']['uri']
+  property :DestinationPath, "#{Chef::Config[:file_cache_path]}\\dotnet-installer.exe"
+end
+
+reboot 'Restart Computer' do
+  action :nothing
+  reason 'Reboot after .NET Framework install'
+end
+
+dsc_resource 'Install .NET Framework' do
+  resource :cDotNetFramework
+  property :KB, node['dotnet']['kb']
+  property :InstallerPath, "#{Chef::Config[:file_cache_path]}\\dotnet-installer.exe"
+  property :Ensure, 'Present'
+  notifies :reboot_now, 'reboot[Restart Computer]', :immediately
 end
